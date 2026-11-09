@@ -1,0 +1,24 @@
+[submodule "api/product"]
+	path = api/product
+	url = https://github.com/EP-PC/Product.git
+	branch = main
+[submodule "api/product-service"]
+	path = api/product-service
+	url = https://github.com/EP-PC/Product-service.git
+	branch = main
+[submodule "api/account"]
+	path = api/account
+	url = https://github.com/EP-PC/Account.git
+	branch = main
+[submodule "api/account-service"]
+	path = api/account-service
+	url = https://github.com/EP-PC/Account-service.git
+	branch = main
+[submodule "api/auth-service"]
+	path = api/auth-service
+	url = https://github.com/EP-PC/Auth-service.git
+	branch = main
+[submodule "api/gateway-service"]
+	path = api/gateway-service
+	url = https://github.com/EP-PC/Gateway.git
+	branch = main
