@@ -1,0 +1,2 @@
+# Scripts shell sempre com LF (CRLF quebra o bash, inclusive no Jenkins em Linux)
+*.sh text eol=lf
