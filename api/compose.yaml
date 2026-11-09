@@ -1,0 +1,80 @@
+# Compose integrado do store: db + account + auth + product + gateway.
+# Só o gateway publica porta (8080); os demais ficam na rede interna do compose.
+# Antes de subir:
+#   - "docker compose down" (sem -v) em qualquer outro compose "store"
+#     (Gateway, Account-service, Auth-service, Product-service): mesmo nome,
+#     mesma porta 8080 e volume store_db-data compartilhado
+#   - build dos jars (ver README): mvn install em product e account, mvn package nos *-service
+#   - .env com JWT_SECRET_KEY e ACCOUNT_ADMIN_* (ver .env.example)
+name: store
+
+services:
+
+  db:
+    image: postgres:17
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USER:-store}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-store}
+      POSTGRES_DB: ${DB_NAME:-store}
+
+  account:
+    build: ./account-service
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_DB: ${DB_NAME:-store}
+      DATABASE_USERNAME: ${DB_USER:-store}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-store}
+      # seed do primeiro ADMIN (do .env local, fora do Git)
+      ACCOUNT_ADMIN_EMAIL: ${ACCOUNT_ADMIN_EMAIL:?defina ACCOUNT_ADMIN_EMAIL no .env}
+      ACCOUNT_ADMIN_HASH: ${ACCOUNT_ADMIN_HASH:?defina ACCOUNT_ADMIN_HASH no .env}
+    depends_on:
+      - db
+
+  auth:
+    build: ./auth-service
+    environment:
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?defina JWT_SECRET_KEY no .env}
+      JWT_DURATION: ${JWT_DURATION:-3600000}
+      JWT_HTTP_ONLY: ${JWT_HTTP_ONLY:-true}
+    depends_on:
+      - account
+
+  product:
+    build: ./product-service
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_DB: ${DB_NAME:-store}
+      DATABASE_USERNAME: ${DB_USER:-store}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-store}
+    depends_on:
+      - db
+
+  # PENDENTE (outro integrante): descomentar quando o submódulo api/order-service existir.
+  # O nome do serviço tem que ser "order": o gateway roteia /orders/** para http://order:8080.
+  # order:
+  #   build: ./order-service
+  #   depends_on:
+  #     - db
+  #     - product
+
+  # PENDENTE (outro integrante): idem, o gateway roteia /exchange/** para http://exchange:8080.
+  # exchange:
+  #   build: ./exchange-service
+
+  gateway:
+    build: ./gateway-service
+    ports:
+      - 8080:8080
+    environment:
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost,http://localhost:3000,http://localhost:8080}
+    depends_on:
+      - auth
+      - account
+      - product
+
+volumes:
+  db-data:
