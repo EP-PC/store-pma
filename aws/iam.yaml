@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'store-pma - roles IAM do EKS (cluster e node group)'
+
+# Duas roles, como no roadmap do EKS do projeto:
+# - ClusterRole: assumida pelo servico EKS para gerenciar o cluster (rede, load balancers).
+# - NodeRole: assumida pelas EC2 do node group (registrar o no, rede dos pods, puxar imagens).
+# Os nomes sao gerados pelo CloudFormation (prefixo da stack), entao o deploy usa CAPABILITY_IAM.
+
+Resources:
+
+  ClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+      Tags:
+        - Key: project
+          Value: store-pma
+
+  NodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      # as tres policies pedidas na pagina do EKS do projeto
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Tags:
+        - Key: project
+          Value: store-pma
+
+Outputs:
+
+  ClusterRoleArn:
+    Description: ARN da role do cluster EKS
+    Value: !GetAtt ClusterRole.Arn
+
+  NodeRoleArn:
+    Description: ARN da role do node group
+    Value: !GetAtt NodeRole.Arn
