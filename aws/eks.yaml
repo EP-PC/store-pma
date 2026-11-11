@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'store-pma - cluster EKS eks-store e node group'
+
+# Cluster EKS + node group gerenciado, seguindo o roadmap do EKS do projeto:
+# - o cluster usa as 4 subnets da VPC (publicas para load balancers, privadas para os pods);
+# - o node group fica SO nas subnets privadas;
+# - roles vindas da stack eks-store-iam.
+# Os parametros sao preenchidos pelo up.ps1 a partir dos outputs das stacks eks-store-vpc e eks-store-iam.
+
+Parameters:
+  ClusterName:
+    Type: String
+    Default: eks-store
+  KubernetesVersion:
+    Type: String
+    Default: '1.37'
+  ClusterRoleArn:
+    Type: String
+  NodeRoleArn:
+    Type: String
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: as 4 subnets da VPC (publicas + privadas)
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: so as 2 subnets privadas (onde ficam os nos)
+  ControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+  NodeInstanceType:
+    Type: String
+    # 2 vCPU / 4 GiB: cabe os 5 pods (ate 512Mi cada) com folga para Order/Exchange e replicas
+    Default: t3.medium
+  NodeDesired:
+    Type: Number
+    Default: 2
+
+Resources:
+
+  Cluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Ref ClusterName
+      Version: !Ref KubernetesVersion
+      RoleArn: !Ref ClusterRoleArn
+      ResourcesVpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds:
+          - !Ref ControlPlaneSecurityGroup
+        EndpointPublicAccess: true
+        EndpointPrivateAccess: true
+      # quem cria o cluster (a role AdministratorAccess do SSO do grupo) vira admin do Kubernetes;
+      # como todos do grupo usam a mesma permission set, todos conseguem usar o kubectl
+      AccessConfig:
+        AuthenticationMode: API_AND_CONFIG_MAP
+        BootstrapClusterCreatorAdminPermissions: true
+      Tags:
+        - Key: project
+          Value: store-pma
+
+  NodeGroup:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      ClusterName: !Ref Cluster
+      NodegroupName: !Sub '${ClusterName}-nodes'
+      NodeRole: !Ref NodeRoleArn
+      Subnets: !Ref PrivateSubnetIds
+      InstanceTypes:
+        - !Ref NodeInstanceType
+      AmiType: AL2023_x86_64_STANDARD
+      DiskSize: 20
+      ScalingConfig:
+        MinSize: 1
+        DesiredSize: !Ref NodeDesired
+        MaxSize: 4
+      Labels:
+        project: store-pma
+      Tags:
+        project: store-pma
+
+Outputs:
+
+  ClusterName:
+    Value: !Ref Cluster
+
+  ClusterEndpoint:
+    Value: !GetAtt Cluster.Endpoint
+
+  ClusterSecurityGroupId:
+    Description: security group que o EKS cria para nos e control plane (usado para liberar o RDS)
+    Value: !GetAtt Cluster.ClusterSecurityGroupId

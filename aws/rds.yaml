@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'store-pma - RDS PostgreSQL do store (substitui o pod postgres do Minikube)'
+
+# Banco gerenciado nas subnets PRIVADAS da VPC, sem acesso publico.
+# So aceita conexao na 5432 vinda do security group do cluster EKS (ou seja, dos pods).
+# A senha NAO fica no Git: vem do aws/.env local e entra como parametro NoEcho.
+# DeletionPolicy Delete + sem backup: apagar a stack nao deixa snapshot cobrando.
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  ClusterSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+  DBName:
+    Type: String
+    Default: store
+  DBUsername:
+    Type: String
+    Default: store
+  DBPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 12
+  DBInstanceClass:
+    Type: String
+    Default: db.t4g.micro
+
+Resources:
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: subnets privadas do store
+      SubnetIds: !Ref PrivateSubnetIds
+      Tags:
+        - Key: project
+          Value: store-pma
+
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Postgres do store - so a partir do cluster EKS
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref ClusterSecurityGroupId
+      Tags:
+        - Key: project
+          Value: store-pma
+
+  DB:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Engine: postgres
+      EngineVersion: '17'
+      DBInstanceClass: !Ref DBInstanceClass
+      AllocatedStorage: '20'
+      StorageType: gp3
+      DBName: !Ref DBName
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref DBSecurityGroup
+      PubliclyAccessible: false
+      MultiAZ: false
+      BackupRetentionPeriod: 0
+      DeleteAutomatedBackups: true
+      DeletionProtection: false
+      Tags:
+        - Key: project
+          Value: store-pma
+
+Outputs:
+
+  DBEndpoint:
+    Description: host do Postgres (vai para a postgres-configmap no EKS)
+    Value: !GetAtt DB.Endpoint.Address
+
+  DBPort:
+    Value: !GetAtt DB.Endpoint.Port
