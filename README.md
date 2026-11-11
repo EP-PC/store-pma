@@ -85,6 +85,39 @@ Tudo é feito dentro de `api/`.
 > Os repositórios dos serviços também têm compose próprios com `name: store` e a porta 8080.
 > Deixe só um de pé por vez.
 
+## Kubernetes (Minikube)
+
+Os manifestos ficam em cada serviço (`api/<serviço>/k8s/k8s.yaml`) e o banco em `api/postgres/`.
+As imagens vêm do Docker Hub (`pedrohmm1/<serviço>`). Só o `gateway` é exposto (LoadBalancer 8080).
+
+```bash
+minikube start --driver=docker --memory=3072 --cpus=4
+
+# banco (ConfigMap e Secret antes do Deployment)
+kubectl apply -f api/postgres/configmap.yaml
+kubectl apply -f api/postgres/secrets.yaml
+kubectl apply -f api/postgres/deployment.yaml
+kubectl apply -f api/postgres/service.yaml
+
+# segredos reais, criados a partir do api/.env (fora do Git)
+kubectl create secret generic account-secrets \
+  --from-literal=ACCOUNT_ADMIN_EMAIL="..." --from-literal=ACCOUNT_ADMIN_HASH="..."
+kubectl create secret generic auth-secrets --from-literal=JWT_SECRET_KEY="..."
+
+# serviços
+kubectl apply -f api/account-service/k8s/k8s.yaml
+kubectl apply -f api/auth-service/k8s/k8s.yaml
+kubectl apply -f api/product-service/k8s/k8s.yaml
+kubectl apply -f api/gateway-service/k8s/k8s.yaml
+
+kubectl get pods,svc
+minikube tunnel    # em outro terminal: expõe o gateway em http://localhost:8080
+```
+
+> Logo depois do `minikube start`, o account e o product podem reiniciar algumas vezes
+> (`UnknownHostException: postgres`) até o DNS do cluster subir; o Kubernetes se recupera sozinho.
+> `minikube stop` libera a memória quando não estiver usando.
+
 ## Como atualizar os submódulos
 
 Quando um serviço receber commits novos (já com push no repositório dele):
