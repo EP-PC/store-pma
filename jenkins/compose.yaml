@@ -1,0 +1,49 @@
+# Jenkins do projeto (hands-on 4), igual ao do professor (repo-classes/pma262/jenkins).
+# Imagem própria: jenkins:jdk25 + maven + docker CLI + kubectl + AWS CLI (os dois últimos para o deploy no EKS).
+# UI em http://localhost:9080. O socket do Docker do host é montado para os pipelines rodarem
+# "docker buildx ... --push" (isso dá ao Jenkins controle total do Docker do host: só para uso local).
+# Dados (plugins, jobs, credenciais) ficam em ${CONFIG}/jenkins, fora do Git (ver .gitignore e .env.example).
+# Subir: docker compose up -d --build   |   Senha inicial: docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+name: ops
+
+services:
+
+  jenkins:
+    container_name: jenkins
+    build:
+      dockerfile_inline: |
+        FROM jenkins/jenkins:jdk25
+        USER root
+
+        # Install Tools
+        RUN apt-get update && apt-get install -y lsb-release net-tools iputils-ping maven curl
+
+        # Install Docker
+        RUN curl -fsSLo /usr/share/keyrings/docker-archive-keyring.asc \
+          https://download.docker.com/linux/debian/gpg
+        RUN echo "deb [arch=$(dpkg --print-architecture) \
+          signed-by=/usr/share/keyrings/docker-archive-keyring.asc] \
+          https://download.docker.com/linux/debian \
+          $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+        RUN apt-get update && apt-get install -y docker-ce
+
+        # Install kubectl
+        RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/$(dpkg --print-architecture)/kubectl" \
+            && chmod +x kubectl \
+            && mv kubectl /usr/local/bin/kubectl
+
+        # Install AWS CLI
+        RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-$(arch).zip" -o "awscliv2.zip" && \
+            echo "Unzipping AWS CLI..." && \
+            unzip awscliv2.zip && \
+            ./aws/install --update && \
+            rm awscliv2.zip && \
+            rm -rf ./aws
+
+        RUN usermod -aG docker jenkins
+    ports:
+      - 9080:8080
+    volumes:
+      - ${CONFIG:-./config}/jenkins:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
