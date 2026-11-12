@@ -53,7 +53,7 @@ Narração sugerida: começa com 1 gateway → a carga sobe → CPU do gateway p
 
 ## Resultados (2026-11-12, EKS us-east-2, 2 nós t3.medium, RDS db.t4g.micro)
 
-Gerador: Locust no PC do Filipe (Brasil) → Load Balancer em Ohio. A rede sozinha custa ~160–230 ms por ida e volta,
+Gerador: Locust no PC do Pedro (Brasil) → Load Balancer em Ohio. A rede sozinha custa ~160–230 ms por ida e volta,
 então o **p50 (~170 ms) é quase todo rede**; o que a carga afeta é a **cauda (p95/p99)**.
 
 | Cenário | Usuários | req/s | Falhas | p50 | p95 | p99 | CPU máx. do gateway |
