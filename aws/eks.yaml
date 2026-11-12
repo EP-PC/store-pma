@@ -77,6 +77,19 @@ Resources:
       Tags:
         project: store-pma
 
+  # metrics-server: coleta CPU/memoria dos pods; o HPA (load test) depende dele e o EKS nao traz por padrao.
+  # Add-on gerenciado pela AWS (versao padrao para a versao do Kubernetes do cluster).
+  MetricsServer:
+    Type: AWS::EKS::Addon
+    DependsOn: NodeGroup
+    Properties:
+      ClusterName: !Ref Cluster
+      AddonName: metrics-server
+      ResolveConflicts: OVERWRITE
+      Tags:
+        - Key: project
+          Value: store-pma
+
 Outputs:
 
   ClusterName:
