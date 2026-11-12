@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'store-pma - usuario IAM do Jenkins (deploy no EKS)'
+
+# Usuario IAM so para o Jenkins fazer o deploy no EKS (CI/CD: "after the image is pushed to
+# Docker Hub, Jenkins deploys the image to EKS"). O Jenkins roda fora da AWS e precisa de uma
+# credencial permanente (o SSO do grupo expira em horas), por isso um usuario com access key,
+# como no roadmap da pagina AWS do projeto ("Create User" / "Create Access Key").
+#
+# Stack PERMANENTE (eks-store-jenkins-iam): o down.ps1 nao apaga, para a access key guardada
+# no Jenkins continuar valendo entre um up e outro. Usuario IAM nao tem custo.
+# A access key NAO e criada aqui (iria parar nos outputs): e criada no console e colada
+# direto no Jenkins como credencial "aws-credential".
+#
+# Permissao na AWS: so eks:DescribeCluster do eks-store (o "aws eks update-kubeconfig" precisa).
+# Permissao DENTRO do cluster: dada pela access entry da stack eks-store-jenkins-access
+# (jenkins-access.yaml), limitada ao namespace default.
+
+Parameters:
+  ClusterName:
+    Type: String
+    Default: eks-store
+
+Resources:
+
+  JenkinsUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: store-jenkins
+      Policies:
+        - PolicyName: eks-describe-store
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: eks:DescribeCluster
+                Resource: !Sub 'arn:aws:eks:${AWS::Region}:${AWS::AccountId}:cluster/${ClusterName}'
+      Tags:
+        - Key: project
+          Value: store-pma
+
+Outputs:
+
+  JenkinsUserArn:
+    Value: !GetAtt JenkinsUser.Arn

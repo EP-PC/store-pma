@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'store-pma - acesso do usuario do Jenkins ao cluster eks-store'
+
+# Access entry do EKS: liga o usuario IAM store-jenkins a uma permissao DENTRO do Kubernetes.
+# AmazonEKSEditPolicy no namespace "default": pode atualizar os deployments (kubectl set image,
+# rollout status), mas nao e admin do cluster nem mexe em outros namespaces.
+# Vive junto com o cluster: o up.ps1 cria depois do eks-store-cluster e o down.ps1 apaga antes.
+
+Parameters:
+  ClusterName:
+    Type: String
+    Default: eks-store
+  JenkinsUserArn:
+    Type: String
+
+Resources:
+
+  JenkinsAccess:
+    Type: AWS::EKS::AccessEntry
+    Properties:
+      ClusterName: !Ref ClusterName
+      PrincipalArn: !Ref JenkinsUserArn
+      Type: STANDARD
+      AccessPolicies:
+        - PolicyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy
+          AccessScope:
+            Type: namespace
+            Namespaces:
+              - default
+      Tags:
+        - Key: project
+          Value: store-pma

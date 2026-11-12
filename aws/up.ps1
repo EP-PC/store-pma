@@ -70,6 +70,19 @@ Deploy 'eks-store-rds' 'rds.yaml' @('--parameter-overrides',
     "DBPassword=$dbPassword")
 $dbHost = Output 'eks-store-rds' 'DBEndpoint'
 
+# acesso do Jenkins ao cluster (so se o usuario IAM permanente store-jenkins ja existir;
+# ele e criado uma vez com aws/jenkins-iam.yaml, stack eks-store-jenkins-iam)
+$ErrorActionPreference = 'Continue'
+$jenkinsArn = aws cloudformation describe-stacks @aws --stack-name eks-store-jenkins-iam `
+    --query 'Stacks[0].Outputs[0].OutputValue' --output text 2>&1
+$jenkinsOk = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = 'Stop'
+if ($jenkinsOk) {
+    Deploy 'eks-store-jenkins-access' 'jenkins-access.yaml' @('--parameter-overrides', "JenkinsUserArn=$jenkinsArn")
+} else {
+    Step 'stack eks-store-jenkins-iam nao existe: pulando o acesso do Jenkins (deploy pelo Jenkins nao vai funcionar)'
+}
+
 # 2) kubectl
 Step 'kubeconfig (contexto eks-store)'
 aws eks update-kubeconfig @aws --name eks-store --alias eks-store | Out-Null; Check

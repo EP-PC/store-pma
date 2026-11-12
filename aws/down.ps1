@@ -38,7 +38,8 @@ if (StackExists 'eks-store-cluster') {
 }
 
 # 2) stacks em ordem inversa
-foreach ($stack in 'eks-store-rds', 'eks-store-cluster', 'eks-store-iam', 'eks-store-vpc') {
+# eks-store-jenkins-iam (usuario IAM do Jenkins) e PERMANENTE e fica de fora de proposito
+foreach ($stack in 'eks-store-jenkins-access', 'eks-store-rds', 'eks-store-cluster', 'eks-store-iam', 'eks-store-vpc') {
     if (StackExists $stack) {
         Step "apagando stack $stack"
         aws cloudformation delete-stack @aws --stack-name $stack
