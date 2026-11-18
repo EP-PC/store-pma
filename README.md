@@ -89,7 +89,8 @@ Tudo é feito dentro de `api/`.
 ## Kubernetes (Minikube)
 
 Os manifestos ficam em cada serviço (`api/<serviço>/k8s/k8s.yaml`) e o banco em `api/postgres/`.
-As imagens vêm do Docker Hub (`pedrohmm1/<serviço>`). Só o `gateway` é exposto (LoadBalancer 8080).
+As imagens vêm do Docker Hub (`pedrohmm1/<serviço>`; o order em `enzoperego/order`). Só o `gateway`
+é exposto (LoadBalancer 8080).
 
 ```bash
 minikube start --driver=docker --memory=3072 --cpus=4
@@ -109,7 +110,7 @@ kubectl create secret generic auth-secrets --from-literal=JWT_SECRET_KEY="..."
 kubectl apply -f api/account-service/k8s/k8s.yaml
 kubectl apply -f api/auth-service/k8s/k8s.yaml
 kubectl apply -f api/product-service/k8s/k8s.yaml
-kubectl apply -f api/order-service/k8s/k8s.yaml     # antes, troque SEU_USUARIO_DOCKERHUB e publique a imagem
+kubectl apply -f api/order-service/k8s/k8s.yaml
 kubectl apply -f api/gateway-service/k8s/k8s.yaml
 
 kubectl get pods,svc

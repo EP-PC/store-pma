@@ -103,11 +103,11 @@ Apply-Yaml @('secret', 'generic', 'account-secrets',
 Apply-Yaml @('secret', 'generic', 'auth-secrets', "--from-literal=JWT_SECRET_KEY=$(EnvValue $envApi 'JWT_SECRET_KEY')")
 
 # 4) servicos
-foreach ($s in 'account-service', 'auth-service', 'product-service', 'gateway-service') {
+foreach ($s in 'account-service', 'auth-service', 'product-service', 'order-service', 'gateway-service') {
     Step "deploy $s"
     kubectl @k apply -f "$root\api\$s\k8s\k8s.yaml"; Check
 }
-foreach ($d in 'account', 'auth', 'product', 'gateway') {
+foreach ($d in 'account', 'auth', 'product', 'order', 'gateway') {
     kubectl @k rollout status "deploy/$d" --timeout=600s; Check
 }
 
