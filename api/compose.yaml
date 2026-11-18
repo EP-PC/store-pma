@@ -53,6 +53,10 @@ services:
     depends_on:
       - db
 
+  # Cache do order (bottleneck 1): preços do product e cotações do exchange, TTL de 60 s.
+  order-redis:
+    image: redis:7.4-alpine
+
   # O nome do serviço tem que ser "order": o gateway roteia /orders/** para http://order:8080.
   # O order chama o product (http://product:8080) para validar cada item e pegar o preço.
   order:
@@ -63,9 +67,11 @@ services:
       DATABASE_DB: ${DB_NAME:-store}
       DATABASE_USERNAME: ${DB_USER:-store}
       DATABASE_PASSWORD: ${DB_PASSWORD:-store}
+      REDIS_HOST: order-redis
     depends_on:
       - db
       - product
+      - order-redis
 
   # PENDENTE (outro integrante): descomentar quando o submódulo api/exchange-service existir.
   # O gateway roteia /exchange/** para http://exchange:8080 e o order chama
