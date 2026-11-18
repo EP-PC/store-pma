@@ -26,8 +26,9 @@ O **gateway** é o único ponto de entrada (só ele publica porta). Ele valida o
 | Account (implementação) | `api/account-service` | [EP-PC/Account-service](https://github.com/EP-PC/Account-service) | EP-PC |
 | Auth | `api/auth-service` | [EP-PC/Auth-service](https://github.com/EP-PC/Auth-service) | EP-PC |
 | Gateway | `api/gateway-service` | [EP-PC/Gateway](https://github.com/EP-PC/Gateway) | EP-PC |
-| Order | `api/order-service` | _pendente_ | EP-PC |
-| Exchange | `api/exchange-service` | _pendente_ | EP-PC |
+| Order (contrato) | `api/order` | [EP-PC/Order](https://github.com/EP-PC/Order) | EP-PC |
+| Order (implementação) | `api/order-service` | [EP-PC/Order-service](https://github.com/EP-PC/Order-service) | EP-PC |
+| Exchange | `api/exchange-service` | _pendente_ (contrato combinado com o Order em [EXCHANGE.md](EXCHANGE.md)) | EP-PC |
 
 ## Pré-requisitos
 
@@ -60,7 +61,7 @@ Tudo é feito dentro de `api/`.
    ```
 
 2. Gere os jars (os Dockerfiles copiam `target/*.jar`). O script faz `mvn install` nos
-   contratos (`product`, `account`) e depois `mvn package` nos services:
+   contratos (`product`, `account`, `order`) e depois `mvn package` nos services:
 
    ```bash
    ./build.sh        # Linux/macOS/Git Bash
@@ -108,6 +109,7 @@ kubectl create secret generic auth-secrets --from-literal=JWT_SECRET_KEY="..."
 kubectl apply -f api/account-service/k8s/k8s.yaml
 kubectl apply -f api/auth-service/k8s/k8s.yaml
 kubectl apply -f api/product-service/k8s/k8s.yaml
+kubectl apply -f api/order-service/k8s/k8s.yaml     # antes, troque SEU_USUARIO_DOCKERHUB e publique a imagem
 kubectl apply -f api/gateway-service/k8s/k8s.yaml
 
 kubectl get pods,svc
