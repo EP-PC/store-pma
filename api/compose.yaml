@@ -79,6 +79,36 @@ services:
   # exchange:
   #   build: ./exchange-service
 
+  # Observabilidade do order (bottleneck 2): só sobem com o profile, para não pesar no dia a dia:
+  #   docker compose --profile observability up --build -d
+  # Prometheus em http://localhost:9090 e Grafana em http://localhost:3000 (painel "Store / Order").
+  # Uso local: o Grafana abre sem login, só para leitura (anônimo Viewer).
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: [observability]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=1d
+    ports:
+      - 9090:9090
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    profiles: [observability]
+    ports:
+      - 3000:3000
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
   gateway:
     build: ./gateway-service
     ports:

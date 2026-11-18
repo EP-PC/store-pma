@@ -86,6 +86,23 @@ Tudo é feito dentro de `api/`.
 > Os repositórios dos serviços também têm compose próprios com `name: store` e a porta 8080.
 > Deixe só um de pé por vez.
 
+## Observabilidade (order)
+
+Prometheus e Grafana ficam no profile `observability` do `api/compose.yaml` e só sobem quando
+pedidos. Hoje coletam as métricas do order (porta de management 8081, só na rede interna);
+configuração em `api/observability/`.
+
+```bash
+cd api
+docker compose --profile observability up --build -d
+```
+
+- Grafana: `http://localhost:3000`, painel **Store / Order** (sem login, só leitura).
+- Prometheus: `http://localhost:9090`.
+- Tráfego de demonstração: `api/observability/traffic.py` (instruções no topo do arquivo).
+
+Para derrubar, use o mesmo profile: `docker compose --profile observability down` (sem `-v`).
+
 ## Kubernetes (Minikube)
 
 Os manifestos ficam em cada serviço (`api/<serviço>/k8s/k8s.yaml`) e o banco em `api/postgres/`.
