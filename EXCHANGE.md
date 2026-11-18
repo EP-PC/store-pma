@@ -14,6 +14,7 @@ Enunciado: <https://insper.github.io/platform/2026.2/exercises/exchange/>
 | Nome do serviço | **`exchange`** (no compose, no Service e no Deployment do Kubernetes) |
 | Porta | **8080** (ex.: `uvicorn main:app --host 0.0.0.0 --port 8080`) |
 | Endpoint | **`GET /exchange/{from}/{to}`** (singular) |
+| Health-check | **`GET /exchange/health-check`** → 200, **sem** exigir `id-account` (rota aberta no gateway) |
 | Autenticação | header **`id-account`**; sem ele → **401** |
 | Resposta 200 | `{"sell": número, "buy": número, "date": "YYYY-MM-DD HH:MM:SS", "id-account": "..."}` |
 | Moeda não suportada | **404** (o Order também aceita 400 ou 422) |
@@ -34,6 +35,13 @@ plural, a rota do gateway (repo do Pedro) teria que mudar.
   `GET http://exchange:8080/exchange/USD/BRL`.
 - A cotação é o valor de **1 unidade de `from` em `to`**: `GET /exchange/USD/BRL` com
   `sell = 5.40` significa 1 USD = 5,40 BRL.
+
+## Health-check: `GET /exchange/health-check`
+
+Como nos outros serviços, o gateway deixa `GET /exchange/health-check` **aberto** (sem login;
+`RouterValidator.java` do gateway). Por isso a requisição chega **sem** `id-account`: o
+health-check responde 200 sem exigir o header. Ele não conflita com `/exchange/{from}/{to}`
+(tem um segmento a menos).
 
 ## Autenticação: header `id-account`
 
@@ -100,6 +108,10 @@ from fastapi import FastAPI, Header, HTTPException
 
 app = FastAPI()
 
+@app.get("/exchange/health-check")
+def health_check():
+    return {}  # 200, sem exigir id-account (rota aberta no gateway)
+
 @app.get("/exchange/{source}/{target}")
 def exchange(source: str, target: str, id_account: str | None = Header(default=None)):
     if not id_account:
@@ -150,9 +162,14 @@ Chave da API externa (se a escolhida exigir): **variável de ambiente**, nunca n
 curl -i -H 'id-account: 0195ae95-5be7-7dd3-b35d-7a7d87c404fb' http://localhost:8080/exchange/USD/BRL   # 200
 curl -i http://localhost:8080/exchange/USD/BRL                                                         # 401
 curl -i -H 'id-account: 0195ae95-5be7-7dd3-b35d-7a7d87c404fb' http://localhost:8080/exchange/USD/XYZ   # 404
+curl -i http://localhost:8080/exchange/health-check                                                    # 200
 ```
 
-Pelo compose do store-pma (logado, com o cookie do `POST /auth/login`):
+Pelo compose do store-pma:
+
+- `GET http://localhost:8080/exchange/health-check` sem login → 200.
+
+Logado (com o cookie do `POST /auth/login`):
 
 - `GET http://localhost:8080/exchange/USD/BRL` → 200 com o `id-account` do usuário logado.
 - `GET http://localhost:8080/orders/{id}?currency=BRL` → pedido com os totais em reais.
