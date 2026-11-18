@@ -11,8 +11,8 @@ $ErrorActionPreference = 'Stop'
 $mvn = (Get-Command mvn -ErrorAction SilentlyContinue).Source
 if (-not $mvn) { $mvn = "$env:USERPROFILE\tools\apache-maven-3.9.11\bin\mvn.cmd" }
 
-$contratos = 'product', 'account'
-$services  = 'product-service', 'account-service', 'auth-service', 'gateway-service'
+$contratos = 'product', 'account', 'order'
+$services  = 'product-service', 'account-service', 'auth-service', 'order-service', 'gateway-service'
 
 function Build($dir, $goal) {
     Write-Host "==> $dir ($goal)" -ForegroundColor Cyan

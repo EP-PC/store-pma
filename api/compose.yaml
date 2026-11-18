@@ -1,10 +1,10 @@
-# Compose integrado do store: db + account + auth + product + gateway.
+# Compose integrado do store: db + account + auth + product + order + gateway.
 # Só o gateway publica porta (8080); os demais ficam na rede interna do compose.
 # Antes de subir:
 #   - "docker compose down" (sem -v) em qualquer outro compose "store"
-#     (Gateway, Account-service, Auth-service, Product-service): mesmo nome,
+#     (Gateway, Account-service, Auth-service, Product-service, Order-service): mesmo nome,
 #     mesma porta 8080 e volume store_db-data compartilhado
-#   - build dos jars (ver README): mvn install em product e account, mvn package nos *-service
+#   - build dos jars (ver README): mvn install em product, account e order, mvn package nos *-service
 #   - .env com JWT_SECRET_KEY e ACCOUNT_ADMIN_* (ver .env.example)
 name: store
 
@@ -53,15 +53,23 @@ services:
     depends_on:
       - db
 
-  # PENDENTE (outro integrante): descomentar quando o submódulo api/order-service existir.
   # O nome do serviço tem que ser "order": o gateway roteia /orders/** para http://order:8080.
-  # order:
-  #   build: ./order-service
-  #   depends_on:
-  #     - db
-  #     - product
+  # O order chama o product (http://product:8080) para validar cada item e pegar o preço.
+  order:
+    build: ./order-service
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_DB: ${DB_NAME:-store}
+      DATABASE_USERNAME: ${DB_USER:-store}
+      DATABASE_PASSWORD: ${DB_PASSWORD:-store}
+    depends_on:
+      - db
+      - product
 
-  # PENDENTE (outro integrante): idem, o gateway roteia /exchange/** para http://exchange:8080.
+  # PENDENTE (outro integrante): descomentar quando o submódulo api/exchange-service existir.
+  # O gateway roteia /exchange/** para http://exchange:8080 e o order chama
+  # GET http://exchange:8080/exchange/USD/{moeda}: contrato em ../EXCHANGE.md.
   # exchange:
   #   build: ./exchange-service
 
@@ -75,6 +83,7 @@ services:
       - auth
       - account
       - product
+      - order
 
 volumes:
   db-data:
