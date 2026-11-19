@@ -1,4 +1,4 @@
-# Compose integrado do store: db + account + auth + product + order + gateway.
+# Compose integrado do store: db + account + auth + product + order + exchange + gateway.
 # Só o gateway publica porta (8080); os demais ficam na rede interna do compose.
 # Antes de subir:
 #   - "docker compose down" (sem -v) em qualquer outro compose "store"
@@ -73,11 +73,14 @@ services:
       - product
       - order-redis
 
-  # PENDENTE (outro integrante): descomentar quando o submódulo api/exchange-service existir.
   # O gateway roteia /exchange/** para http://exchange:8080 e o order chama
   # GET http://exchange:8080/exchange/USD/{moeda}: contrato em ../EXCHANGE.md.
-  # exchange:
-  #   build: ./exchange-service
+  # Python (FastAPI) sobre o PTAX do Banco Central: sem chave, então sem variável no .env.
+  # O Dockerfile tem 3 estágios; o compose usa o último (final), que não roda os testes.
+  exchange:
+    build: ./exchange-service
+    environment:
+      CACHE_SECONDS: ${EXCHANGE_CACHE_SECONDS:-300}
 
   # Observabilidade do order (bottleneck 2): só sobem com o profile, para não pesar no dia a dia:
   #   docker compose --profile observability up --build -d

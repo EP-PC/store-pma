@@ -28,11 +28,11 @@ O **gateway** é o único ponto de entrada (só ele publica porta). Ele valida o
 | Gateway | `api/gateway-service` | [EP-PC/Gateway](https://github.com/EP-PC/Gateway) | EP-PC |
 | Order (contrato) | `api/order` | [EP-PC/Order](https://github.com/EP-PC/Order) | EP-PC |
 | Order (implementação) | `api/order-service` | [EP-PC/Order-service](https://github.com/EP-PC/Order-service) | EP-PC |
-| Exchange | `api/exchange-service` | _pendente_ (contrato combinado com o Order em [EXCHANGE.md](EXCHANGE.md)) | EP-PC |
+| Exchange (Python, PTAX do BCB) | `api/exchange-service` | [EP-PC/Exchange-service](https://github.com/EP-PC/Exchange-service) (contrato em [EXCHANGE.md](EXCHANGE.md)) | EP-PC |
 
 ## Pré-requisitos
 
-- Java 25 e Maven 3.9+
+- Java 25 e Maven 3.9+ (o Exchange é Python e é buildado só pelo Docker)
 - Docker (com Docker Compose)
 - Acesso de leitura à organização `EP-PC` no GitHub (os repositórios são privados)
 
@@ -128,6 +128,7 @@ kubectl apply -f api/account-service/k8s/k8s.yaml
 kubectl apply -f api/auth-service/k8s/k8s.yaml
 kubectl apply -f api/product-service/k8s/k8s.yaml
 kubectl apply -f api/order-service/k8s/k8s.yaml
+kubectl apply -f api/exchange-service/k8s/k8s.yaml
 kubectl apply -f api/gateway-service/k8s/k8s.yaml
 
 kubectl get pods,svc

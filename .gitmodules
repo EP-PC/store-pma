@@ -30,3 +30,7 @@
 	path = api/order-service
 	url = https://github.com/EP-PC/Order-service.git
 	branch = main
+[submodule "api/exchange-service"]
+	path = api/exchange-service
+	url = https://github.com/EP-PC/Exchange-service.git
+	branch = main
